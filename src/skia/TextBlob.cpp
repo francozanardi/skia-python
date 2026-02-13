@@ -260,7 +260,9 @@ textblob
             SkTextBlobBuilderRunHandler textBlobBuilder(utf8text.c_str(), {0, 0});
             shaper->shape(
                 utf8text.c_str(), utf8text.size(), font, leftToRight, FLT_MAX, &textBlobBuilder);
-            return textBlobBuilder.makeBlob();
+            return py::make_tuple(
+                textBlobBuilder.makeBlob(),
+                textBlobBuilder.endPoint());  // <-- el advance total
         },
         R"docstring(
         Creates :py:class:`TextBlob` in a single run, with shaping, for a text-run direction.
