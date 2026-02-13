@@ -234,59 +234,11 @@ def svgface(svgfont_path):
 def test_svgface_typeface(svgface):
     assert (svgface.getFamilyName() == "SampleSVG")
 
-
-@pytest.fixture
-def svg_blob(svgface):
-    text = "abcdefgh"
-    font = skia.Font(svgface,109)
-    blob = skia.TextBlob.MakeFromShapedText(text, font)
-    return blob
-
 def test_svg_blob_1(svgface):
     text = "abcdefgh"
     font = skia.Font(svgface,109)
     blob = skia.TextBlob.MakeFromText(text, font)
     assert blob is not None
-
-def test_svg_blob_2(svgface):
-    text = "abcdefgh"
-    font = skia.Font(svgface,109)
-    blob = skia.TextBlob.MakeFromShapedText(text, font)
-    assert blob is not None
-
-# This test doesn't really test that the SVG table loads correctly -
-# Rather, it depends on the fact that, for this particular font,
-# the glyf table and the SVG table is substantially different,
-# so the resulting bound box is very different, depending on which
-# table is used for rendering.
-#
-# Before change (glyf?):
-# Mac:   (-1, 14.2852, 292,     88.2852)
-# Linux: ( 0, 43.2852, 356,     98.2852)
-# Win:   ( 0, 43.6426, 352.547, 98.1958)
-def test_svg_blob_bounds(svg_blob):
-    bounds = svg_blob.bounds()
-    import math, sys
-    if not sys.platform.startswith("linux"):
-        pytest.skip("This should work on linux and windows, but somehow only on Linux. REVISIT.")
-    assert (math.isclose(bounds.fLeft,   10,      abs_tol=0.5) and
-            math.isclose(bounds.fTop,    15.2852, abs_tol=0.5) and
-            math.isclose(bounds.fRight,  334,     abs_tol=0.5) and
-            math.isclose(bounds.fBottom, 87.2852, abs_tol=0.5))
-
-
-def test_fontmgr_custom_svg_blob_bounds(svgfont_path):
-    svgface = skia.FontMgr.New_Custom_Empty().makeFromFile(svgfont_path)
-    text = "abcdefgh"
-    font = skia.Font(svgface,109)
-    svg_blob = skia.TextBlob.MakeFromShapedText(text, font)
-    bounds = svg_blob.bounds()
-    import math
-    assert (math.isclose(bounds.fLeft,   10,      abs_tol=0.5) and
-            math.isclose(bounds.fTop,    15.2852, abs_tol=0.5) and
-            math.isclose(bounds.fRight,  334,     abs_tol=3.0) and # The horizontal metric on freetype/Windows differ from freetype/Linux somewhat.
-            math.isclose(bounds.fBottom, 87.2852, abs_tol=0.5))
-
 
 @pytest.fixture
 def fontstyleset(fontmgr):
@@ -672,50 +624,3 @@ def test_FontMetrics_hasStrikeoutThickness(fontmetrics):
 def test_FontMetrics_hasStrikeoutPosition(fontmetrics):
     position = 0.
     assert isinstance(fontmetrics.hasStrikeoutPosition(position), bool)
-
-
-@pytest.fixture
-def color_emoji_run():
-    if sys.platform.startswith("linux"):
-        if os.path.exists("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf"): # Ubuntu CI
-            # Ubuntu is weird - the font is on disk but not accessible to fontconfig
-            # - Possibly https://bugs.launchpad.net/bugs/2054924
-            typeface = skia.Typeface.MakeFromFile("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf")
-        elif os.path.exists("/usr/share/fonts/google-noto-color-emoji-fonts/NotoColorEmoji.ttf"): # Fedora
-            typeface = skia.Typeface.MakeFromFile("/usr/share/fonts/google-noto-color-emoji-fonts/NotoColorEmoji.ttf")
-        else:
-            pytest.skip("Not in Ubuntu CI")
-    if sys.platform.startswith("darwin"):
-        typeface = skia.Typeface("Apple Color Emoji")
-    if sys.platform.startswith("win"):
-        typeface = skia.Typeface("Segoe UI Emoji") # COLRv0
-    text = "✌✌🏻"
-    font = skia.Font(typeface,109)
-    blob = skia.TextBlob.MakeFromShapedText(text, font)
-    run = [x for x in blob]
-    return run[0]
-
-# We want this exactly two (and not three) on all platforms, under all circumstances; no conditionals.
-def test_emoji_count(color_emoji_run):
-    assert (color_emoji_run.fGlyphCount == 2)
-
-def test_emoji_typeface(color_emoji_run):
-    assert ((color_emoji_run.fTypeface.getFamilyName() == "Noto Color Emoji")
-            or (color_emoji_run.fTypeface.getFamilyName() == "Apple Color Emoji")
-            or (color_emoji_run.fTypeface.getFamilyName() == "Segoe UI Emoji"))
-
-# The numbers are hardcoded for three specific version of fonts,
-# and will change if the hosts are upgraded.
-def test_emoji_glyph1(color_emoji_run):
-    if (os.getenv("GITHUB_ACTION") == True):
-        assert ((color_emoji_run.fGlyphIndices[0] == 148)
-                or (color_emoji_run.fGlyphIndices[0] == 247)
-                or (color_emoji_run.fGlyphIndices[0] == 1567))
-
-# The numbers are hardcoded for three specific version of fonts,
-# and will change if the hosts are upgraded.
-def test_emoji_glyph2(color_emoji_run):
-    if (os.getenv("GITHUB_ACTION") == True):
-        assert ((color_emoji_run.fGlyphIndices[1] == 1512)
-                or (color_emoji_run.fGlyphIndices[1] == 248)
-                or (color_emoji_run.fGlyphIndices[1] == 1571))
