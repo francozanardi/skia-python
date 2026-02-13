@@ -1,4 +1,4 @@
-# Skia python binding
+# Skia python binding 
 
 [![CI](https://github.com/kyamagu/skia-python/actions/workflows/ci.yml/badge.svg)](https://github.com/kyamagu/skia-python/actions/workflows/ci.yml)
 [![PyPI version](https://badge.fury.io/py/skia-python.svg)](https://badge.fury.io/py/skia-python)
